@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 import re
 import subprocess
 from bs4 import BeautifulSoup
@@ -7,15 +8,27 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from flask import Flask, request
 
+def are_domains_similar(url1, url2):
+    # Parse the URLs
+    parsed_url1 = urlparse(url1)
+    parsed_url2 = urlparse(url2)
+
+    # Normalize the domains (remove protocol and convert to lowercase)
+    domain1 = parsed_url1.netloc.lower()
+    domain2 = parsed_url2.netloc.lower()
+
+    # Check if one domain is a substring of the other
+    return domain1 in domain2 or domain2 in domain1
+
 class SiteScraper:
     def scrape_site(self, url):
         html_content = get_html_content(url)
 
-        if html_content:
-            cleaned_content = clean_html_content(html_content)
-            return f"\n{'-'*50}\nContent {url}:\n{cleaned_content}\n{'-'*50}"
-        else:
-            return f"Skipping {url} due to being unreachable.\n{'-'*50}"
+        if html_content is None:
+            return f"Skipping {url} due to redirect.\n{'-'*50}"
+
+        cleaned_content = clean_html_content(html_content)
+        return f"\n{'-'*50}\nContent {url}:\n{cleaned_content}\n{'-'*50}"
 
 def get_html_content(url):
     chrome_options = webdriver.ChromeOptions()
@@ -25,10 +38,16 @@ def get_html_content(url):
 
     try:
         driver = webdriver.Chrome(options=chrome_options)
-        # driver.implicitly_wait(10)
         driver.set_page_load_timeout(15)  # Set page load timeout
 
+        original_url = url
         driver.get(url)
+
+        # Check if there was a redirect with a more lenient comparison
+        current_url = driver.execute_script("return window.location.href;")
+        if not are_domains_similar(original_url, current_url):
+            print(f"Redirect detected from {original_url} to {current_url}")
+            return None
 
         WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.TAG_NAME, 'body'))
@@ -54,15 +73,14 @@ def clean_html_content(html_content):
     return cleaned_content
 
 def paid_detector(url_input):
-    # userinput her
     scraper = SiteScraper()
     raw_site_data = scraper.scrape_site(url_input)
     if raw_site_data.startswith("Skipping"):
-        return "UNPAID"
+        return False  # Assuming False indicates an unpaid site
 
     if len(raw_site_data) < 60:
         print("Length reason")
-        return "UNPAID"
+        return False  # Assuming False indicates an unpaid site
         
     string_lines = raw_site_data.splitlines()
     raw_site = " ".join(string_lines)
@@ -83,11 +101,13 @@ def paid_detector(url_input):
         return f"UNPAID - {url_input}"
 
     if output == "YES":
-        return f"PAID - {url_input}"
+        return True  # Assuming True indicates a paid site
+    if not are_domains_similar(original_url, current_url):
+        return False
     elif output == "NO":
-        return f"UNPAID - {url_input}"
+        return False  # Assuming False indicates an unpaid site
     else:
-        return f"UNKNOWN"
+        return False  # Assuming False indicates an unknown status
 
 def detect_url_work(url):
     if re.search(r'\.org\b', url):
@@ -107,14 +127,14 @@ def main():
         url = request.form.get("url")
         
         if not detect_url_work(url):
-            return {"result": "UNPAID"}
+            return {"result": False}  # Assuming False indicates an unpaid site
         
-        result = paid_detector(url).split(' ')[0]
+        result = paid_detector(url)
         
-        if result == "PAID":
-            return {"result": "PAID"}
+        if result:
+            return {"result": True}  # Assuming True indicates a paid site
         else:
-            return {"result": "UNPAID"}
+            return {"result": False}  # Assuming False indicates an unpaid site
     else:
         return """
         <form action='/' method='POST'>
