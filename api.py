@@ -72,7 +72,7 @@ def paid_detector(url_input):
     if len(prompt) > 3800:
         prompt = prompt[:3800] 
 
-    comm = f"tgpt -q --provider llama2 \"{prompt}\""
+    comm = f"tgpt -q --provider phind \"{prompt}\""
     try:
         output = subprocess.check_output(comm, shell=True, text=True).strip()
     except Exception as e:
