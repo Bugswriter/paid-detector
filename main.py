@@ -10,7 +10,7 @@ import requests
 # pygame.init()
 
 def get_paid_status(domain):
-    base_url = ipx
+    base_url = f'http://{ipx}:5000/'
     data = {'url': domain}
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     response = requests.post(base_url, data=data, headers=headers)
