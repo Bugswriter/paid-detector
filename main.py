@@ -10,7 +10,7 @@ import requests
 # pygame.init()
 
 def get_paid_status(domain):
-    base_url = 'http://13.233.93.191:5000/'
+    base_url = ipx
     data = {'url': domain}
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     response = requests.post(base_url, data=data, headers=headers)
@@ -28,6 +28,7 @@ print("""
 """)
 # Login
 url = 'http://copypaste.onlineurlservices.in/Account/Login?ReturnUrl=%2F'
+ipx = input('Enter Your Ip: ')
 username = input('Enter username: ')
 password = input('Enter password: ')
 # username = 'ssmg1'
