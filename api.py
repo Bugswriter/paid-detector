@@ -76,11 +76,11 @@ def paid_detector(url_input):
     scraper = SiteScraper()
     raw_site_data = scraper.scrape_site(url_input)
     if raw_site_data.startswith("Skipping"):
-        return False  # Assuming False indicates an unpaid site
+        return "UNPAID"  # Assuming False indicates an unpaid site
 
     if len(raw_site_data) < 60:
         print("Length reason")
-        return False  # Assuming False indicates an unpaid site
+        return "UNPAID"  # Assuming False indicates an unpaid site
         
     string_lines = raw_site_data.splitlines()
     raw_site = " ".join(string_lines)
@@ -101,11 +101,11 @@ def paid_detector(url_input):
         return f"UNPAID - {url_input}"
 
     if output == "YES":
-        return True  # Assuming True indicates a paid site
+        return f"PAID - {url_input}"  # Assuming True indicates a paid site
     if not are_domains_similar(original_url, current_url):
         return False
     elif output == "NO":
-        return False  # Assuming False indicates an unpaid site
+        return f"UNPAID - {url_input}"  # Assuming False indicates an unpaid site
     else:
         return False  # Assuming False indicates an unknown status
 
@@ -127,14 +127,14 @@ def main():
         url = request.form.get("url")
         
         if not detect_url_work(url):
-            return {"result": False}  # Assuming False indicates an unpaid site
+            return {"result": "UNPAID"}  # Assuming False indicates an unpaid site
         
-        result = paid_detector(url)
+        result = paid_detector(url).split(' ')[0]
         
         if result:
-            return {"result": True}  # Assuming True indicates a paid site
+            return {"result": "PAID"}  # Assuming True indicates a paid site
         else:
-            return {"result": False}  # Assuming False indicates an unpaid site
+            return {"result": "UNPAID"}  # Assuming False indicates an unpaid site
     else:
         return """
         <form action='/' method='POST'>
